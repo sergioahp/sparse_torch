@@ -88,8 +88,8 @@ def main():
     
     # Create tensors as specified
     print("Creating tensors...")
-    sparse_shape = (2048, 2048 * 8)  # (2048, 16384)
-    dense_shape = (2048 * 8, 2048)   # (16384, 2048)
+    sparse_shape = (2048, 2048 * 16)  # (2048, 32768)
+    dense_shape = (2048 * 16, 2048)   # (32768, 2048)
     
     # 99% sparse tensor
     sparse_tensor = create_sparse_tensor(sparse_shape, sparsity=0.99).to(device)

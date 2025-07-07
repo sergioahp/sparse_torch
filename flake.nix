@@ -21,6 +21,9 @@
             pythonPackages.numpy
             pythonPackages.pip
             pythonPackages.virtualenv
+            pythonPackages.pandas
+            pythonPackages.matplotlib
+            pythonPackages.seaborn
           ];
 
         };
