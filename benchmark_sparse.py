@@ -5,6 +5,14 @@ import time
 import os
 from typing import Tuple, Dict, Any
 
+try:
+    import torch_sparse
+    HAS_TORCH_SPARSE = True
+    print("torch-sparse available")
+except ImportError:
+    HAS_TORCH_SPARSE = False
+    print("torch-sparse not available, using built-in sparse ops only")
+
 def create_sparse_tensor(shape: Tuple[int, int], sparsity: float = 0.99) -> torch.Tensor:
     """Create a sparse tensor with specified sparsity (percentage of zeros)"""
     total_elements = shape[0] * shape[1]
@@ -20,6 +28,24 @@ def create_sparse_tensor(shape: Tuple[int, int], sparsity: float = 0.99) -> torc
     # Create sparse COO tensor
     sparse_tensor = torch.sparse_coo_tensor(indices, values, shape)
     return sparse_tensor.coalesce()
+
+def create_torch_sparse_tensor(shape: Tuple[int, int], sparsity: float = 0.99):
+    """Create a torch-sparse SparseTensor with specified sparsity"""
+    if not HAS_TORCH_SPARSE:
+        return None
+        
+    total_elements = shape[0] * shape[1]
+    non_zero_elements = int(total_elements * (1 - sparsity))
+    
+    # Generate random indices for non-zero elements
+    row = torch.randint(0, shape[0], (non_zero_elements,))
+    col = torch.randint(0, shape[1], (non_zero_elements,))
+    
+    # Generate random values for non-zero elements
+    value = torch.randn(non_zero_elements)
+    
+    # Create torch-sparse SparseTensor
+    return torch_sparse.SparseTensor(row=row, col=col, value=value, sparse_sizes=shape)
 
 def create_dense_tensor(shape: Tuple[int, int]) -> torch.Tensor:
     """Create a dense tensor with random values"""
@@ -111,6 +137,34 @@ def main():
         sparse_tensor_2
     )
     print(f"  Time: {sparse_add_result['avg_time']:.6f}s")
+    
+    # torch-sparse operations if available
+    if HAS_TORCH_SPARSE:
+        print("\nTorch-sparse operations:")
+        print("-" * 25)
+        
+        # Create torch-sparse tensor
+        torch_sparse_tensor = create_torch_sparse_tensor(sparse_shape, sparsity=0.99)
+        if device.type == 'cuda':
+            torch_sparse_tensor = torch_sparse_tensor.cuda()
+        
+        print(f"Torch-sparse tensor shape: {torch_sparse_tensor.sparse_sizes()}")
+        print(f"Torch-sparse tensor nnz: {torch_sparse_tensor.nnz()}")
+        
+        # torch-sparse matrix multiplication
+        print("\nMatrix multiplication (torch-sparse @ dense):")
+        def torch_sparse_matmul():
+            return torch_sparse_tensor @ dense_tensor
+        
+        torch_sparse_mm_result = benchmark_operation(
+            "torch-sparse @ dense",
+            torch_sparse_matmul
+        )
+        print(f"  Time: {torch_sparse_mm_result['avg_time']:.6f}s")
+        
+        # Compare with built-in sparse
+        speedup_vs_builtin = sparse_mm_result['avg_time'] / torch_sparse_mm_result['avg_time']
+        print(f"  Speedup vs built-in sparse: {speedup_vs_builtin:.2f}x")
     
     # Memory usage comparison
     print("\nMemory Usage Comparison:")

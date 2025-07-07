@@ -18,7 +18,9 @@
           buildInputs = with pkgs; [
             python
             pythonPackages.torch
+            pythonPackages.numpy
             pythonPackages.pip
+            pythonPackages.virtualenv
           ];
 
         };
